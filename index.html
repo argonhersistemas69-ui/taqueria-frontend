@@ -68,6 +68,37 @@
 
         .touch-btn { transition: all 0.15s ease; }
         .touch-btn:active { transform: scale(0.96); }
+
+        /* ==========================================================================
+           ESTILOS RESPONSIVOS AÑADIDOS (CELULARES, TABLETS, PC)
+           ========================================================================== */
+        
+        /* Por defecto (Celulares y pantallas pequeñas): Diseño en una sola columna vertical con textos legibles */
+        body {
+            font-size: 14px;
+        }
+
+        /* Contenedores principales flexibles para apilarse en vertical en móviles */
+        #posSection, #cashierSection {
+            flex-direction: column !important;
+        }
+
+        /* Tablets (pantallas medianas a partir de 768px): Diseño intermedio en dos columnas si aplica */
+        @media (min-width: 768px) {
+            body {
+                font-size: 15px;
+            }
+            #posSection, #cashierSection {
+                flex-direction: row !important;
+            }
+        }
+
+        /* PC / Pantallas grandes (a partir de 1024px o 1280px): Diseño completo en varias columnas y filas horizontales optimizadas */
+        @media (min-width: 1024px) {
+            body {
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col overflow-x-hidden overflow-y-auto">
