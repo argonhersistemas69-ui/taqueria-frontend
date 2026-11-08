@@ -890,7 +890,23 @@
             const branch = document.getElementById('loginBranch').value;
             const inputCode = document.getElementById('loginUserCode').value.trim().toLowerCase();
             const pass = document.getElementById('loginPassword').value.trim();
-            const userDef = appData.users[inputCode];
+            
+            // Buscar coincidencia ya sea por la clave exacta o buscando dentro de la propiedad .code de cada usuario
+            let foundKey = null;
+            let userDef = null;
+
+            if (appData.users[inputCode]) {
+                foundKey = inputCode;
+                userDef = appData.users[inputCode];
+            } else {
+                for (const [key, u] of Object.entries(appData.users)) {
+                    if (u.code && u.code.toLowerCase() === inputCode) {
+                        foundKey = key;
+                        userDef = u;
+                        break;
+                    }
+                }
+            }
 
             if (!userDef || userDef.pass !== pass) {
                 document.getElementById('loginErrorMsg').innerText = "USUARIO O CONTRASEÑA INCORRECTOS.";
@@ -911,7 +927,7 @@
 
             appData.activeUser = userDef;
             appData.activeBranch = branch;
-            sessionStorage.setItem('taqueria_active_user', inputCode);
+            sessionStorage.setItem('taqueria_active_user', foundKey);
             sessionStorage.setItem('taqueria_active_branch', branch);
             
             initUserSessionView();
@@ -1326,7 +1342,7 @@
                         item.modificadores.forEach(mod => {
                             ['cachete', 'lengua', 'sesos', 'ojo', 'trompa'].forEach(part => {
                                 if (mod.toLowerCase().includes(part)) {
-                                    const match = mod.match(new RegExp(`${part}[:\\s]*(\\d+)`, 'i'));
+                                    const match = mod.match(new RegExp(`${part}[:\s]*(\d+)`, 'i'));
                                     if (match) cabeza[part] += parseInt(match[1]);
                                     else cabeza[part] += item.cantidad;
                                 }
