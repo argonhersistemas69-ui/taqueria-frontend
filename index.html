@@ -73,17 +73,14 @@
            ESTILOS RESPONSIVOS AÑADIDOS (CELULARES, TABLETS, PC)
            ========================================================================== */
         
-        /* Por defecto (Celulares y pantallas pequeñas): Diseño en una sola columna vertical con textos legibles */
         body {
             font-size: 14px;
         }
 
-        /* Contenedores principales flexibles para apilarse en vertical en móviles */
         #posSection, #cashierSection {
             flex-direction: column !important;
         }
 
-        /* Tablets (pantallas medianas a partir de 768px): Diseño intermedio en dos columnas si aplica */
         @media (min-width: 768px) {
             body {
                 font-size: 15px;
@@ -93,7 +90,6 @@
             }
         }
 
-        /* PC / Pantallas grandes (a partir de 1024px o 1280px): Diseño completo en varias columnas y filas horizontales optimizadas */
         @media (min-width: 1024px) {
             body {
                 font-size: 16px;
@@ -780,7 +776,8 @@
                     if (parsed) {
                         appData.orders = parsed.orders || [];
                         appData.expenses = parsed.expenses || [];
-                        appData.users = parsed.users || DEFAULT_USERS;
+                        // Fusionar usuarios para conservar los nuevos y editados sin perder los predeterminados
+                        appData.users = { ...DEFAULT_USERS, ...(parsed.users || {}) };
                         if (parsed.branchStock) appData.branchStock = parsed.branchStock;
                         setupBranchRestrictions();
                         const activeSec = document.querySelector('main > section:not(.hidden)');
@@ -798,7 +795,7 @@
                         const parsed = JSON.parse(stored);
                         appData.orders = parsed.orders || [];
                         appData.expenses = parsed.expenses || [];
-                        appData.users = parsed.users || DEFAULT_USERS;
+                        appData.users = { ...DEFAULT_USERS, ...(parsed.users || {}) };
                         if (parsed.branchStock) {
                             appData.branchStock = parsed.branchStock;
                         } else if (parsed.oxxoStock) {
@@ -813,7 +810,7 @@
                 if (parsed) {
                     appData.orders = parsed.orders || [];
                     appData.expenses = parsed.expenses || [];
-                    appData.users = parsed.users || DEFAULT_USERS;
+                    appData.users = { ...DEFAULT_USERS, ...(parsed.users || {}) };
                     if (parsed.branchStock) appData.branchStock = parsed.branchStock;
                     
                     setupBranchRestrictions();
@@ -846,7 +843,7 @@
             // Avisar al servidor por Socket.io
             socket.emit('client_update', payload);
 
-            // Opcional: Respaldo HTTP POST para asegurar persistencia inmediata
+            // Respaldo HTTP POST para asegurar persistencia inmediata en el servidor
             fetch(`${SOCKET_URL}/api/state`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
