@@ -2,6 +2,9 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TAQUERÍA EL SABROSO - POS & CONTROL OPS</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -73,14 +76,55 @@
            ESTILOS RESPONSIVOS AÑADIDOS (CELULARES, TABLETS, PC)
            ========================================================================== */
         
+        /* Por defecto (Celulares y pantallas pequeñas): Diseño en una sola columna vertical con textos legibles */
         body {
             font-size: 14px;
         }
 
+        /* Contenedores principales flexibles para apilarse en vertical en móviles */
         #posSection, #cashierSection {
             flex-direction: column !important;
         }
 
+        /* En móvil (< 768px): evitar contenedores aplastados / doble scroll y convertir el ticket en cajón modal */
+        @media (max-width: 767px) {
+            #posSection, #cashierSection {
+                height: auto !important;
+                min-height: 100%;
+                padding-bottom: 5.5rem !important;
+            }
+
+            #posMenuCol {
+                overflow: visible !important;
+                flex: none !important;
+            }
+
+            #posTicketDrawer {
+                display: none;
+            }
+
+            #posTicketDrawer.mobile-drawer-open {
+                display: flex !important;
+                position: fixed !important;
+                inset: 0 !important;
+                width: 100% !important;
+                height: 100dvh !important;
+                z-index: 45 !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+            }
+
+            #cashierAccountsCol {
+                overflow: visible !important;
+                flex: none !important;
+            }
+
+            #cashierRightCol {
+                flex: none !important;
+            }
+        }
+
+        /* Tablets (pantallas medianas a partir de 768px): Diseño intermedio en dos columnas si aplica */
         @media (min-width: 768px) {
             body {
                 font-size: 15px;
@@ -88,19 +132,49 @@
             #posSection, #cashierSection {
                 flex-direction: row !important;
             }
+            #posTicketDrawer {
+                display: flex !important;
+            }
         }
 
+        /* PC / Pantallas grandes (a partir de 1024px o 1280px): Diseño completo en varias columnas y filas horizontales optimizadas */
         @media (min-width: 1024px) {
             body {
                 font-size: 16px;
             }
         }
+    
+        @media print {
+            body {
+                background: white !important;
+                font-size: 11px !important;
+            }
+            #pdfReportContainer {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 4px !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+        }
+
+    
+        @media print, screen {
+            #pdfReportContainer {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 auto !important;
+                box-sizing: border-box !important;
+            }
+        }
+
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col overflow-x-hidden overflow-y-auto">
 
     <!-- TOP PERSISTENT HEADER -->
-    <header id="mainHeader" class="bg-gradient-to-r from-[var(--engineering-orange)] via-[var(--cinnabar)] to-[var(--carrot-orange)] text-white shadow-md flex-none z-30 hidden">
+    <header id="mainHeader" class="bg-gradient-to-r from-[var(--engineering-orange)] via-[var(--cinnabar)] to-[var(--carrot-orange)] text-white shadow-md flex-none sticky top-0 z-30 hidden">
         <div class="max-w-7xl mx-auto px-3 py-2 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <div class="bg-white text-[var(--engineering-orange)] p-2 rounded-full font-black text-xl flex items-center justify-center w-10 h-10 shadow">🌮</div>
@@ -113,16 +187,13 @@
                     </h1>
                     <p class="text-xs text-amber-100 flex items-center gap-2">
                         <span id="headerUserInfo">CARGANDO USUARIO...</span>
-                        <span id="dayNoticeBadge" class="bg-white/20 text-white px-1.5 py-0.2 rounded text-[10px]"></span>
+                        <span id="dayNoticeBadge" class="bg-white/20 text-white px-1.5 py-0.2 rounded text-xs font-bold"></span>
                     </p>
                 </div>
             </div>
             <div class="flex items-center space-x-2">
-                <button onclick="openAdminStockModal()" title="ADMINISTRAR STOCK" class="bg-black/20 hover:bg-black/40 text-amber-200 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1 font-semibold border border-amber-300/30">
+                <button id="btnAdminStock" onclick="openAdminStockModal()" title="ADMINISTRAR STOCK" class="bg-black/20 hover:bg-black/40 text-amber-200 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1 font-semibold border border-amber-300/30">
                     <i class="fa-solid fa-boxes-stacked"></i> <span class="hidden sm:inline">STOCK BEBIDAS</span>
-                </button>
-                <button onclick="triggerRandomAuditSim()" title="SIMULAR CORTE ALEATORIO" class="bg-black/20 hover:bg-black/40 text-amber-200 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1 font-semibold border border-amber-300/30">
-                    <i class="fa-solid fa-clock-rotate-left"></i> <span class="hidden sm:inline">SIMULAR CORTE</span>
                 </button>
                 <button onclick="showSection('reportSection')" id="navReportBtn" class="bg-white/20 hover:bg-white/30 text-white text-xs px-2.5 py-1.5 rounded-lg font-semibold flex items-center gap-1">
                     <i class="fa-solid fa-chart-pie"></i> <span class="hidden md:inline">CIERRE / REPORTE</span>
@@ -132,7 +203,7 @@
                 </button>
             </div>
         </div>
-        <nav id="roleTabs" class="bg-[var(--dark-charcoal)] text-white px-3 py-1.5 flex gap-1 overflow-x-auto text-xs sm:text-sm font-medium border-t border-white/10"></nav>
+        <nav id="roleTabs" class="bg-[var(--dark-charcoal)] text-white px-3 py-2 flex gap-1.5 overflow-x-auto text-xs sm:text-sm font-medium border-t border-white/10"></nav>
     </header>
 
     <!-- MAIN APP CONTAINER -->
@@ -180,8 +251,8 @@
 
         <!-- SECCIÓN 1: TOMA DE COMANDAS -->
         <section id="posSection" class="h-full w-full p-2 sm:p-4 flex flex-col md:flex-row gap-3 hidden">
-            <div class="flex-1 bg-white rounded-2xl shadow-md border border-amber-200/60 p-3 sm:p-4 flex flex-col overflow-y-auto">
-                <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
+            <div id="posMenuCol" class="flex-1 bg-white rounded-2xl shadow-md border border-amber-200/60 p-3 sm:p-4 flex flex-col overflow-y-auto">
+                <div class="flex flex-wrap justify-between items-center gap-2 mb-3 pb-2 border-b border-gray-200">
                     <h3 class="font-black text-gray-800 text-base sm:text-lg flex items-center gap-2">
                         <i class="fa-solid fa-utensils text-[var(--cinnabar)]"></i> CAPTURA DE COMANDA CON MODIFICADORES
                     </h3>
@@ -220,12 +291,12 @@
                             <span class="text-xs font-bold uppercase tracking-wider text-gray-500">ESPECIALIDAD DE CABEZA (C) - $18.00</span>
                         </div>
                         <div id="cabezaCardContainer" class="bg-gray-100 border-2 border-gray-300 rounded-xl p-3">
-                            <div class="flex items-center justify-between">
+                            <div class="flex items-center justify-between gap-2">
                                 <div>
                                     <h4 class="font-black text-gray-800 text-base">TACOS DE CABEZA (CACHETE, LENGUA, SESOS, OJO, TROMPA)</h4>
                                     <p class="text-xs text-gray-600" id="cabezaDescription">DISPONIBLE EN FIN DE SEMANA.</p>
                                 </div>
-                                <button id="btnOpenCabezaModal" onclick="openCabezaModal()" class="bg-[var(--engineering-orange)] text-white font-bold px-3 py-2 rounded-xl shadow touch-btn text-xs">DESGLOSAR</button>
+                                <button id="btnOpenCabezaModal" onclick="openCabezaModal()" class="bg-[var(--engineering-orange)] text-white font-bold px-3 py-2 rounded-xl shadow touch-btn text-xs flex-shrink-0">DESGLOSAR</button>
                             </div>
                         </div>
                     </div>
@@ -233,19 +304,19 @@
                     <!-- Venta Libre -->
                     <div>
                         <span class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5 block">VENTA LIBRE (MONTO EN PESOS $)</span>
-                        <div class="grid grid-cols-2 gap-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl">
                                 <span class="font-bold text-amber-900 text-xs block mb-1">🍲 CONSOMÉ (BASE $200 = 1L)</span>
-                                <div class="flex gap-1">
-                                    <input type="number" id="montoConsome" placeholder="$ Monto" class="w-full bg-white border rounded p-1.5 text-xs font-bold">
-                                    <button onclick="addConsomeLibre()" class="bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-bold">AGREGAR</button>
+                                <div class="flex gap-1.5">
+                                    <input type="number" inputmode="decimal" id="montoConsome" placeholder="$ Monto" class="w-full bg-white border rounded-lg p-2 text-sm font-bold">
+                                    <button onclick="addConsomeLibre()" class="bg-amber-600 text-white px-3.5 py-2 rounded-lg text-xs font-bold flex-shrink-0">AGREGAR</button>
                                 </div>
                             </div>
                             <div class="bg-red-50 border border-red-200 p-3 rounded-xl">
                                 <span class="font-bold text-red-900 text-xs block mb-1">🥩 CARNE A GRANEL (BASE $500 = 1KG)</span>
-                                <div class="flex gap-1">
-                                    <input type="number" id="montoCarne" placeholder="$ Monto" class="w-full bg-white border rounded p-1.5 text-xs font-bold">
-                                    <button onclick="addCarneLibre()" class="bg-red-600 text-white px-3 py-1.5 rounded text-xs font-bold">AGREGAR</button>
+                                <div class="flex gap-1.5">
+                                    <input type="number" inputmode="decimal" id="montoCarne" placeholder="$ Monto" class="w-full bg-white border rounded-lg p-2 text-sm font-bold">
+                                    <button onclick="addCarneLibre()" class="bg-red-600 text-white px-3.5 py-2 rounded-lg text-xs font-bold flex-shrink-0">AGREGAR</button>
                                 </div>
                             </div>
                         </div>
@@ -268,19 +339,33 @@
                     <!-- Notas Especiales -->
                     <div>
                         <label class="block text-xs font-bold uppercase text-gray-700 mb-1">NOTAS ESPECIALES</label>
-                        <input type="text" id="orderNotesInput" placeholder="Ej. bien dorado, salsa aparte..." class="w-full bg-gray-50 border border-gray-300 rounded-xl p-2 text-xs">
+                        <input type="text" id="orderNotesInput" placeholder="Ej. bien dorado, salsa aparte..." class="w-full bg-gray-50 border border-gray-300 rounded-xl p-2.5 text-xs">
                     </div>
                 </div>
             </div>
 
-            <!-- Right Side: Order Ticket Summary -->
-            <div class="w-full md:w-80 lg:w-96 bg-white rounded-2xl shadow-md border border-amber-200/60 p-3 sm:p-4 flex flex-col">
+            <!-- Right Side: Order Ticket Summary (Desktop panel / Mobile full-screen drawer) -->
+            <div id="posTicketDrawer" class="w-full md:w-80 lg:w-96 bg-white rounded-2xl shadow-md border border-amber-200/60 p-3 sm:p-4 flex flex-col">
                 <div class="flex justify-between items-center pb-2 border-b border-gray-200 mb-2">
                     <h3 class="font-black text-gray-800 text-base flex items-center gap-1.5">
                         <i class="fa-solid fa-receipt text-[var(--engineering-orange)]"></i>
                         <span id="editingOrderTitle">COMANDA ACTUAL</span>
                     </h3>
-                    <button onclick="clearCurrentOrderForm()" class="text-xs text-red-600 hover:underline font-bold">LIMPIAR</button>
+                    <div class="flex items-center gap-3">
+                        <button onclick="clearCurrentOrderForm()" class="text-xs text-red-600 hover:underline font-bold">LIMPIAR</button>
+                        <button type="button" onclick="toggleMobileTicketDrawer(false)" class="md:hidden bg-gray-200 hover:bg-gray-300 text-gray-800 px-2.5 py-1 rounded-lg text-xs font-black">✕ CERRAR</button>
+                    </div>
+                </div>
+
+                <!-- SELECTOR DE PLATO / BOLSA (OPCIÓN 1) -->
+                <div id="orderContainerBar" class="mb-2 bg-amber-50/70 border border-amber-200 rounded-xl p-2">
+                    <div class="flex items-center justify-between gap-1.5 mb-1.5">
+                        <span class="text-xs font-bold font-black text-amber-900 uppercase tracking-wider">SEPARAR EN:</span>
+                        <button type="button" onclick="addNewContainer()" class="bg-[var(--cinnabar)] hover:opacity-90 text-white text-xs font-bold font-black px-2 py-1 rounded-lg shadow-sm touch-btn flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i> <span id="btnAddContainerLabel">NUEVO PLATO</span>
+                        </button>
+                    </div>
+                    <div id="containerTabsList" class="flex flex-wrap gap-1"></div>
                 </div>
 
                 <div id="orderItemsSummary" class="flex-1 bg-gray-50 rounded-xl p-3 overflow-y-auto font-mono text-xs space-y-2 border border-gray-200">
@@ -305,12 +390,27 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Barra flotante inferior solo para celular (< 768px) -->
+            <div id="mobilePosBottomBar" class="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-[var(--dark-charcoal)] text-white px-3 py-2.5 shadow-2xl border-t border-amber-400/30 flex items-center justify-between gap-2">
+                <button type="button" onclick="toggleMobileTicketDrawer(true)" class="flex-1 bg-white/15 active:bg-white/25 text-white py-2.5 px-3 rounded-xl font-black text-xs flex items-center justify-between touch-btn border border-white/20">
+                    <span class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-receipt text-[var(--carrot-orange)]"></i>
+                        <span>VER COMANDA (<span id="mobileBarItemsCount">0</span>)</span>
+                    </span>
+                    <span id="mobileBarTotalPrice" class="text-emerald-300 text-sm font-black">$0.00</span>
+                </button>
+                <button type="button" onclick="submitCurrentOrder()" class="bg-emerald-600 active:bg-emerald-700 text-white py-2.5 px-4 rounded-xl font-black text-xs flex items-center gap-1.5 shadow-lg touch-btn flex-shrink-0">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>ENVIAR</span>
+                </button>
+            </div>
         </section>
 
         <!-- SECCIÓN 2: COCINA -->
         <section id="kitchenSection" class="h-full w-full p-3 sm:p-4 flex flex-col hidden">
-            <div class="flex justify-between items-center mb-3">
-                <h2 class="font-black text-gray-800 text-xl flex items-center gap-2">
+            <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+                <h2 class="font-black text-gray-800 text-lg sm:text-xl flex items-center gap-2">
                     <span class="text-2xl">🔥</span> PANTALLA DE COCINA (TAQUERO)
                 </h2>
                 <div class="flex items-center gap-2 text-xs font-bold text-gray-600 bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-sm">
@@ -323,20 +423,23 @@
 
         <!-- SECCIÓN 3: CAJA -->
         <section id="cashierSection" class="h-full w-full p-3 sm:p-4 flex flex-col md:flex-row gap-3 hidden">
-            <div class="flex-1 bg-white rounded-2xl shadow-md border border-amber-200/60 p-3 sm:p-4 flex flex-col overflow-y-auto">
+            <div id="cashierAccountsCol" class="flex-1 bg-white rounded-2xl shadow-md border border-amber-200/60 p-3 sm:p-4 flex flex-col overflow-y-auto">
                 <h3 class="font-black text-gray-800 text-lg mb-3 flex items-center gap-2 border-b pb-2">
                     <i class="fa-solid fa-cash-register text-emerald-600"></i> CUENTAS POR COBRAR
                 </h3>
                 <div id="unpaidOrdersList" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
             </div>
-            <div class="w-full md:w-96 flex flex-col gap-3">
-                <div class="bg-white rounded-2xl shadow-md border border-amber-200/60 p-4 flex flex-col">
-                    <h4 class="font-black text-gray-800 text-base mb-2 border-b pb-1">PROCESAR COBRO</h4>
+            <div id="cashierRightCol" class="w-full md:w-96 flex flex-col gap-3">
+                <div id="cashierPaymentCard" class="bg-white rounded-2xl shadow-md border border-amber-200/60 p-4 flex flex-col">
+                    <div class="flex justify-between items-center mb-2 border-b pb-1">
+                        <h4 class="font-black text-gray-800 text-base">PROCESAR COBRO</h4>
+                        <button type="button" onclick="scrollBackToAccounts()" class="md:hidden bg-amber-100 text-amber-900 px-2.5 py-1 rounded-lg text-xs font-black">↑ CUENTAS</button>
+                    </div>
                     <div id="paymentActiveNotice" class="text-xs bg-amber-50 text-amber-800 p-2 rounded-lg font-bold mb-3 border border-amber-200">SELECCIONA UNA CUENTA DE LA IZQUIERDA PARA COBRAR.</div>
                     <div class="space-y-3">
                         <div>
                             <label class="block text-xs font-bold uppercase text-gray-600 mb-1">MONTO TOTAL ($)</label>
-                            <input type="number" step="0.5" id="payAmountInput" placeholder="0.00" class="w-full bg-gray-50 border-2 border-amber-300 rounded-xl p-3 font-black text-2xl text-emerald-700 focus:outline-none">
+                            <input type="number" inputmode="decimal" step="0.5" id="payAmountInput" placeholder="0.00" class="w-full bg-gray-50 border-2 border-amber-300 rounded-xl p-3 font-black text-2xl text-emerald-700 focus:outline-none">
                         </div>
                         <div>
                             <label class="block text-xs font-bold uppercase text-gray-600 mb-1">MÉTODO DE PAGO</label>
@@ -347,7 +450,7 @@
                                 <button type="button" onclick="selectPayMethod('Cortesía')" id="payBtnCortesía" class="pay-method-btn bg-purple-100 text-purple-900 font-bold p-2.5 rounded-xl text-xs flex flex-col items-center justify-center gap-1 border border-purple-300">CORTESÍA ($0)</button>
                             </div>
                         </div>
-                        <button onclick="processPaymentSubmit()" id="btnConfirmPayment" disabled class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white font-black py-3 px-4 rounded-xl shadow-lg touch-btn text-base uppercase tracking-wider">REGISTRAR COBRO</button>
+                        <button onclick="processPaymentSubmit()" id="btnConfirmPayment" disabled class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white font-black py-3.5 px-4 rounded-xl shadow-lg touch-btn text-base uppercase tracking-wider">REGISTRAR COBRO</button>
                     </div>
                 </div>
 
@@ -355,9 +458,9 @@
                 <div class="bg-white rounded-2xl shadow-md border border-red-200 p-4 flex flex-col">
                     <h4 class="font-black text-red-900 text-sm mb-2 border-b pb-1">GASTOS GENERALES (SALIDAS)</h4>
                     <div class="space-y-2">
-                        <input type="number" id="expenseAmount" placeholder="MONTO $" class="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold">
-                        <input type="text" id="expenseReason" placeholder="CONCEPTO / RAZÓN" class="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs">
-                        <button onclick="registerExpense()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg text-xs uppercase shadow">REGISTRAR SALIDA</button>
+                        <input type="number" inputmode="decimal" id="expenseAmount" placeholder="MONTO $" class="w-full bg-gray-50 border border-gray-300 rounded-lg p-2.5 text-sm font-bold">
+                        <input type="text" id="expenseReason" placeholder="CONCEPTO / RAZÓN" class="w-full bg-gray-50 border border-gray-300 rounded-lg p-2.5 text-xs">
+                        <button onclick="registerExpense()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg text-xs uppercase shadow">REGISTRAR SALIDA</button>
                     </div>
                 </div>
             </div>
@@ -365,101 +468,98 @@
 
         <!-- SECCIÓN 4: REPORTE FINAL CONSOLIDADO (VERSIÓN 1 INTACTA) -->
         <section id="reportSection" class="h-full w-full p-3 sm:p-6 overflow-y-auto hidden">
-            <div id="pdfReportContainer" class="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border border-amber-200 p-4 sm:p-6 space-y-6">
+            <div id="pdfReportContainer" class="w-full bg-white rounded-xl shadow-lg border border-amber-200 p-3 sm:p-6 space-y-3 text-gray-900 text-xs sm:text-sm overflow-x-hidden" style="width: 100%; max-width: 100%; margin: 0 auto; box-sizing: border-box;" style="width: 100%; box-sizing: border-box;">
                 <!-- Report Header -->
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-2">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 gap-2">
                     <div>
-                        <h2 class="font-black text-2xl text-[var(--dark-charcoal)] flex items-center gap-2">
+                        <h2 class="font-black text-lg text-[var(--dark-charcoal)] flex items-center gap-2">
                             <span>📄 REPORTE Z DE JORNADA</span>
                         </h2>
-                        <p class="text-xs text-gray-600">Sucursal: <strong id="reportBranchName" class="text-[var(--engineering-orange)] font-bold text-sm">--</strong> | Generado: <span id="reportTimestamp">--</span></p>
+                        <p class="text-xs text-gray-600">Sucursal: <strong id="reportBranchName" class="text-[var(--engineering-orange)] font-bold">--</strong> | Generado: <span id="reportTimestamp">--</span></p>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="window.print()" class="bg-gray-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-black">
-                            🖨️ Imprimir
-                        </button>
-                        <button onclick="triggerEndOfDay()" class="bg-[var(--engineering-orange)] text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 shadow">
+                        <button onclick="triggerEndOfDay()" class="bg-[var(--engineering-orange)] text-white px-2.5 py-1 rounded-lg text-xs font-bold hover:opacity-90 shadow">
                             🔒 Cierre de Jornada
                         </button>
                     </div>
                 </div>
 
                 <!-- Financial Balance Cards -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
-                        <span class="text-xs text-emerald-800 font-bold uppercase">Total Cobrado</span>
-                        <h3 id="repTotalCollected" class="text-xl sm:text-2xl font-black text-emerald-700">$0.00</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                    <div class="bg-emerald-50 border border-emerald-200 p-2.5 rounded-lg">
+                        <span class="text-xs font-bold text-emerald-800 font-bold uppercase block">Total Cobrado</span>
+                        <h3 id="repTotalCollected" class="text-base sm:text-lg font-black text-emerald-700">$0.00</h3>
                     </div>
-                    <div class="bg-red-50 border border-red-200 p-3 rounded-xl">
-                        <span class="text-xs text-red-800 font-bold uppercase">Total Salidas</span>
-                        <h3 id="repTotalExpenses" class="text-xl sm:text-2xl font-black text-red-700">$0.00</h3>
+                    <div class="bg-red-50 border border-red-200 p-2.5 rounded-lg">
+                        <span class="text-xs font-bold text-red-800 font-bold uppercase block">Total Salidas</span>
+                        <h3 id="repTotalExpenses" class="text-base sm:text-lg font-black text-red-700">$0.00</h3>
                     </div>
-                    <div class="bg-blue-50 border border-blue-200 p-3 rounded-xl">
-                        <span class="text-xs text-blue-800 font-bold uppercase">Balance Neto</span>
-                        <h3 id="repNetBalance" class="text-xl sm:text-2xl font-black text-blue-800">$0.00</h3>
+                    <div class="bg-blue-50 border border-blue-200 p-2.5 rounded-lg">
+                        <span class="text-xs font-bold text-blue-800 font-bold uppercase block">Balance Neto</span>
+                        <h3 id="repNetBalance" class="text-base sm:text-lg font-black text-blue-800">$0.00</h3>
                     </div>
-                    <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl">
-                        <span class="text-xs text-amber-800 font-bold uppercase">Por Cobrar</span>
-                        <h3 id="repUnpaidCount" class="text-xl sm:text-2xl font-black text-amber-800">0 cuentas</h3>
+                    <div class="bg-amber-50 border border-amber-200 p-2.5 rounded-lg">
+                        <span class="text-xs font-bold text-amber-800 font-bold uppercase block">Por Cobrar</span>
+                        <h3 id="repUnpaidCount" class="text-base sm:text-lg font-black text-amber-800">0 cuentas</h3>
                     </div>
                 </div>
 
                 <!-- Payment Breakdown & Card Terminal Reconciliation -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 gap-2.5">
                     <!-- Methods Breakdown -->
-                    <div class="border border-gray-200 rounded-xl p-4 bg-gray-50">
-                        <h4 class="font-bold text-gray-800 text-sm border-b pb-2 mb-3">Cobros por Método de Pago</h4>
-                        <div class="space-y-2 text-xs">
+                    <div class="border border-gray-200 rounded-lg p-2.5 bg-gray-50">
+                        <h4 class="font-bold text-gray-800 text-xs border-b pb-1 mb-1.5">Cobros por Método de Pago</h4>
+                        <div class="space-y-1 text-xs">
                             <div class="flex justify-between">
                                 <span>💵 Efectivo:</span>
-                                <strong id="repPayEfectivo" class="font-bold text-sm">$0.00</strong>
+                                <strong id="repPayEfectivo" class="font-bold">$0.00</strong>
                             </div>
                             <div class="flex justify-between">
                                 <span>💳 Tarjeta (Sistema):</span>
-                                <strong id="repPayTarjeta" class="font-bold text-sm">$0.00</strong>
+                                <strong id="repPayTarjeta" class="font-bold">$0.00</strong>
                             </div>
                             <div class="flex justify-between">
                                 <span>📱 Transferencia:</span>
-                                <strong id="repPayTransf" class="font-bold text-sm">$0.00</strong>
+                                <strong id="repPayTransf" class="font-bold">$0.00</strong>
                             </div>
                         </div>
 
-                        <!-- Card Terminal Reconciliation Input -->
-                        <div class="mt-4 pt-3 border-t border-gray-300">
-                            <label class="block text-[11px] font-bold text-gray-700 mb-1 uppercase">Comparativa Lote Terminal Física</label>
-                            <div class="flex gap-2">
-                                <input type="number" id="terminalPhysicalTotal" placeholder="Lote físico $" class="bg-white border rounded p-1.5 text-xs font-bold w-full" oninput="calculateTerminalDiff()">
+                        <!-- Physical Cash Reconciliation Input -->
+                        <div class="mt-2 pt-1.5 border-t border-gray-300">
+                            <label class="block text-xs font-bold font-bold text-gray-700 mb-1 uppercase">Comparativa Dinero Físico</label>
+                            <div class="flex gap-1.5">
+                                <input type="number" inputmode="decimal" id="terminalPhysicalTotal" placeholder="Dinero físico $" class="bg-white border rounded p-1 text-xs font-bold w-full" oninput="calculateTerminalDiff()">
                             </div>
-                            <div id="terminalDiffNotice" class="mt-2 text-xs font-bold hidden p-2 rounded"></div>
+                            <div id="terminalDiffNotice" class="mt-1 text-xs font-bold hidden p-1 rounded"></div>
                         </div>
                     </div>
 
                     <!-- Breakdown By Cashier User Code -->
-                    <div class="border border-gray-200 rounded-xl p-4 bg-gray-50">
-                        <h4 class="font-bold text-gray-800 text-sm border-b pb-2 mb-3">Cobros por Usuario / Cajero</h4>
-                        <div id="repCashiersBreakdown" class="space-y-2 text-xs"></div>
+                    <div class="border border-gray-200 rounded-lg p-2.5 bg-gray-50">
+                        <h4 class="font-bold text-gray-800 text-xs border-b pb-1 mb-1.5">Cobros por Usuario / Cajero</h4>
+                        <div id="repCashiersBreakdown" class="space-y-1 text-xs"></div>
                     </div>
                 </div>
 
                 <!-- Detailed Product Consumption -->
-                <div class="border border-gray-200 rounded-xl p-4 bg-gray-50">
-                    <h4 class="font-bold text-gray-800 text-sm border-b pb-2 mb-3">Desglose Físico Consumido (Unidades)</h4>
+                <div class="border border-gray-200 rounded-lg p-2.5 bg-gray-50">
+                    <h4 class="font-bold text-gray-800 text-xs border-b pb-1 mb-1.5">Desglose Físico Consumido (Unidades)</h4>
                     
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                    <div class="grid grid-cols-1 gap-2 text-xs">
                         <!-- Tacos Summary -->
                         <div>
-                            <h5 class="font-bold text-[var(--engineering-orange)] mb-1 uppercase text-[11px]">Tacos Regulares & Totales</h5>
-                            <ul class="space-y-1">
+                            <h5 class="font-bold text-[var(--engineering-orange)] mb-1 uppercase text-xs font-bold">Tacos Regulares & Totales</h5>
+                            <ul class="space-y-0.5">
                                 <li class="flex justify-between"><span>Surtida (S):</span><strong id="repCountSurtida">0</strong></li>
                                 <li class="flex justify-between"><span>Maciza (M):</span><strong id="repCountMaciza">0</strong></li>
-                                <li class="flex justify-between font-bold border-t pt-1"><span>Total Cabeza (C):</span><strong id="repCountCabezaTotal">0</strong></li>
+                                <li class="flex justify-between font-bold border-t pt-0.5"><span>Total Cabeza (C):</span><strong id="repCountCabezaTotal">0</strong></li>
                             </ul>
                         </div>
 
                         <!-- Cabeza Detailed Breakdown -->
                         <div>
-                            <h5 class="font-bold text-[var(--carrot-orange)] mb-1 uppercase text-[11px]">Desglose Tacos Cabeza</h5>
-                            <ul class="space-y-1 pl-2 border-l-2 border-amber-300">
+                            <h5 class="font-bold text-[var(--carrot-orange)] mb-1 uppercase text-xs font-bold">Desglose Tacos Cabeza</h5>
+                            <ul class="space-y-0.5 pl-2 border-l-2 border-amber-300">
                                 <li class="flex justify-between"><span>Cachete:</span><strong id="repCountCachete">0</strong></li>
                                 <li class="flex justify-between"><span>Lengua:</span><strong id="repCountLengua">0</strong></li>
                                 <li class="flex justify-between"><span>Sesos:</span><strong id="repCountSesos">0</strong></li>
@@ -470,11 +570,11 @@
 
                         <!-- Drinks & Order Types -->
                         <div>
-                            <h5 class="font-bold text-blue-600 mb-1 uppercase text-[11px]">Bebidas y Clasificación</h5>
-                            <ul class="space-y-1">
+                            <h5 class="font-bold text-blue-600 mb-1 uppercase text-xs font-bold">Bebidas y Clasificación</h5>
+                            <ul class="space-y-0.5">
                                 <li class="flex justify-between"><span>🥤 Aguas:</span><strong id="repCountAguas">0</strong></li>
                                 <li class="flex justify-between"><span>🥤 Refrescos:</span><strong id="repCountRefrescos">0</strong></li>
-                                <li class="flex justify-between border-t pt-1"><span>🪑 Comandas Mesa:</span><strong id="repCountMesa">0</strong></li>
+                                <li class="flex justify-between border-t pt-0.5"><span>🪑 Comandas Mesa:</span><strong id="repCountMesa">0</strong></li>
                                 <li class="flex justify-between"><span>📦 Comandas Pedido:</span><strong id="repCountPedido">0</strong></li>
                             </ul>
                         </div>
@@ -482,8 +582,8 @@
                 </div>
 
                 <!-- Expenses Audit list -->
-                <div class="border border-gray-200 rounded-xl p-4 bg-gray-50">
-                    <h4 class="font-bold text-gray-800 text-sm border-b pb-2 mb-2">Auditoría de Salidas / Gastos</h4>
+                <div class="border border-gray-200 rounded-lg p-2.5 bg-gray-50">
+                    <h4 class="font-bold text-gray-800 text-xs border-b pb-1 mb-1.5">Auditoría de Salidas / Gastos</h4>
                     <div id="repExpensesList" class="space-y-1 text-xs font-mono"></div>
                 </div>
             </div>
@@ -606,6 +706,26 @@
         </div>
     </div>
 
+    <!-- MODAL: PERSONALIZAR CONSOMÉ -->
+    <div id="consomeModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 border border-amber-300 space-y-4">
+            <h3 id="consomeModalTitle" class="font-black text-gray-800 text-lg border-b pb-2 flex justify-between">
+                <span>PERSONALIZAR CONSOMÉ</span>
+                <button onclick="closeConsomeModal()" class="text-gray-400 hover:text-black">✕</button>
+            </h3>
+
+            <div class="space-y-2 text-sm">
+                <span class="block text-xs font-bold uppercase text-gray-700 mb-1">TIPO DE CARNE EN CONSOMÉ</span>
+                <label class="flex items-center gap-2 font-medium cursor-pointer"><input type="radio" name="consomeRadio" value="maciza" checked class="w-4 h-4 text-[var(--cinnabar)]"> MACIZA</label>
+                <label class="flex items-center gap-2 font-medium cursor-pointer"><input type="radio" name="consomeRadio" value="surtida" class="w-4 h-4 text-[var(--cinnabar)]"> SURTIDA</label>
+            </div>
+
+            <button onclick="confirmAddConsome()" class="w-full bg-[var(--engineering-orange)] text-white font-black py-3 rounded-xl uppercase tracking-wider text-xs shadow touch-btn">
+                AGREGAR A LA ORDEN
+            </button>
+        </div>
+    </div>
+
     <!-- MODAL: MODIFICADORES -->
     <div id="modifierModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden backdrop-blur-sm">
         <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 border border-amber-300 space-y-4">
@@ -676,7 +796,7 @@
             <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-1">🥤</div>
             <h3 class="font-black text-xl text-gray-900">APERTURA DE CAJA - SUCURSAL OXXO</h3>
             <p class="text-xs text-gray-600">Por favor, ingrese la cantidad de **aguas** disponibles para el arranque de este día:</p>
-            <input type="number" id="oxxoInitialAguasInput" min="0" placeholder="Ej. 50" class="w-full bg-gray-50 border-2 border-blue-300 rounded-xl p-3 text-center text-2xl font-black text-blue-900 focus:outline-none">
+            <input type="number" inputmode="numeric" id="oxxoInitialAguasInput" min="0" placeholder="Ej. 50" class="w-full bg-gray-50 border-2 border-blue-300 rounded-xl p-3 text-center text-2xl font-black text-blue-900 focus:outline-none">
             <button onclick="confirmOxxoOpeningStock()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl text-sm uppercase shadow">ESTABLECER STOCK Y INICIAR JORNADA</button>
         </div>
     </div>
@@ -694,21 +814,10 @@
         </div>
     </div>
 
-    <!-- MODAL: CORTE ALEATORIO -->
-    <div id="randomAuditModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 hidden backdrop-blur-md">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-center border-4 border-amber-500">
-            <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3 animate-bounce">⚠️</div>
-            <h3 class="font-black text-2xl text-gray-900 mb-1">CORTE ALEATORIO REQUERIDO</h3>
-            <p class="text-xs text-gray-600 mb-4">PAUSA OBLIGATORIA DE AUDITORÍA CADA 2 HORAS.</p>
-            <button onclick="dismissAuditModal()" class="w-full bg-emerald-600 text-white font-black py-3 rounded-xl text-sm uppercase">REANUDAR / CONTINUAR</button>
-        </div>
-    </div>
-
     <!-- JAVASCRIPT LOGIC IMPLEMENTATION -->
     <script>
-        // Conectar al servidor puente en Render
-        const SOCKET_URL = "https://taqueria-el-sabroso.onrender.com";
-        const socket = io(SOCKET_URL);
+        // Conexión dinámica nativa para Socket.io (compatible con localhost y Cloudflare Tunnel)
+        const socket = io();
 
         const DEFAULT_USERS = {
             dev: { name: "Desarrollador", code: "dev", pass: "dev123", role: "dev", branch: "Todas", status: "activo" },
@@ -718,6 +827,8 @@
             taquero: { name: "Taquero Cocina", code: "taq", pass: "taquero123", role: "taquero", branch: "Puerto", status: "activo" },
             apoyo: { name: "Cajero Apoyo", code: "apo", pass: "apoyo123", role: "apoyo", branch: "Puerto", status: "activo" }
         };
+
+        let isServerSynced = false; // Candado: evita sobrescribir el servidor antes de leerlo
 
         let appData = {
             orders: [],
@@ -735,6 +846,8 @@
         let currentOrderDraft = {
             id: null,
             type: 'Mesa',
+            activeContainer: 1,
+            totalContainers: 1,
             items: [],
             cabeza: { cachete: 0, lengua: 0, sesos: 0, ojo: 0, trompa: 0 },
             isModified: false
@@ -747,18 +860,42 @@
         let selectedPayMethod = 'Efectivo';
         let adminAuthSuccessCallback = null;
 
-        window.onload = function() {
-            loadFromStorage();
-            checkDailyReset();
+        function toggleMobileTicketDrawer(open) {
+            const drawer = document.getElementById('posTicketDrawer');
+            if (!drawer) return;
+            if (open) drawer.classList.add('mobile-drawer-open');
+            else drawer.classList.remove('mobile-drawer-open');
+        }
+
+        function scrollBackToAccounts() {
+            const accountsCol = document.getElementById('cashierAccountsCol');
+            if (accountsCol) {
+                accountsCol.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        window.onload = async function() {
+            await loadFromStorage(); // 1. PRIMERO esperamos a descargar db.json del servidor
+            checkDailyReset();       // 2. DESPUÉS verificamos si cambió el día
             updateCurrentDateDisplay();
             setupBranchRestrictions();
+            renderContainerSelector();
             if (appData.activeUser) {
                 initUserSessionView();
             } else {
                 const sessionUser = sessionStorage.getItem('taqueria_active_user');
                 const sessionBranch = sessionStorage.getItem('taqueria_active_branch');
                 if (sessionUser && sessionBranch && appData.users[sessionUser]) {
-                    appData.activeUser = appData.users[sessionUser];
+                    const userObj = appData.users[sessionUser];
+                    const isGlobalRole = (userObj.role === 'admin' || userObj.role === 'dev');
+                    const assignedBranch = userObj.branch || 'Puerto';
+                    if (!isGlobalRole && assignedBranch !== 'Todas' && sessionBranch !== assignedBranch) {
+                        sessionStorage.removeItem('taqueria_active_user');
+                        sessionStorage.removeItem('taqueria_active_branch');
+                        showLogin();
+                        return;
+                    }
+                    appData.activeUser = userObj;
                     appData.activeBranch = sessionBranch;
                     initUserSessionView();
                 } else {
@@ -768,50 +905,50 @@
             setInterval(renderKitchenGrid, 3000);
         };
 
-        function loadFromStorage() {
-            // Al cargar, pedimos el estado actual al servidor puente
-            fetch(`${SOCKET_URL}/api/state`)
-                .then(res => res.json())
-                .then(parsed => {
-                    if (parsed) {
-                        appData.orders = parsed.orders || [];
-                        appData.expenses = parsed.expenses || [];
-                        // Fusionar usuarios para conservar los nuevos y editados sin perder los predeterminados
-                        appData.users = { ...DEFAULT_USERS, ...(parsed.users || {}) };
-                        if (parsed.branchStock) appData.branchStock = parsed.branchStock;
-                        setupBranchRestrictions();
-                        const activeSec = document.querySelector('main > section:not(.hidden)');
-                        if (activeSec) {
-                            if (activeSec.id === 'kitchenSection') renderKitchenGrid();
-                            else if (activeSec.id === 'cashierSection') renderCashierView();
-                            else if (activeSec.id === 'reportSection') renderReportView();
-                            else if (activeSec.id === 'rbacSection') renderUsersTable();
-                        }
-                    }
-                }).catch(err => {
-                    console.error("Error cargando del servidor, usando respaldo local:", err);
-                    const stored = localStorage.getItem('taqueria_sabroso_db');
-                    if (stored) {
-                        const parsed = JSON.parse(stored);
-                        appData.orders = parsed.orders || [];
-                        appData.expenses = parsed.expenses || [];
-                        appData.users = { ...DEFAULT_USERS, ...(parsed.users || {}) };
-                        if (parsed.branchStock) {
-                            appData.branchStock = parsed.branchStock;
-                        } else if (parsed.oxxoStock) {
-                            appData.branchStock.Oxxo.aguas = parsed.oxxoStock.aguas || 0;
-                            appData.branchStock.Oxxo.ventasAguas = parsed.oxxoStock.ventasAguas || 0;
-                        }
-                    }
-                });
-
-            // Escuchar eventos en vivo cuando otro dispositivo modifique algo
-            socket.on('state_update', (parsed) => {
+        async function loadFromStorage() {
+            try {
+                const res = await fetch('/api/state');
+                const parsed = await res.json();
                 if (parsed) {
                     appData.orders = parsed.orders || [];
                     appData.expenses = parsed.expenses || [];
-                    appData.users = { ...DEFAULT_USERS, ...(parsed.users || {}) };
-                    if (parsed.branchStock) appData.branchStock = parsed.branchStock;
+                    if (parsed.users && Object.keys(parsed.users).length > 0) {
+                        appData.users = parsed.users;
+                    }
+                    if (parsed.branchStock && Object.keys(parsed.branchStock).length > 0) {
+                        appData.branchStock = parsed.branchStock;
+                    }
+                }
+            } catch (err) {
+                console.error("Error cargando del servidor, usando respaldo local:", err);
+                const stored = localStorage.getItem('taqueria_sabroso_db');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    appData.orders = parsed.orders || [];
+                    appData.expenses = parsed.expenses || [];
+                    if (parsed.users && Object.keys(parsed.users).length > 0) {
+                        appData.users = parsed.users;
+                    }
+                    if (parsed.branchStock) {
+                        appData.branchStock = parsed.branchStock;
+                    }
+                }
+            }
+
+            isServerSynced = true; // Ya tenemos los datos reales, habilitamos el guardado
+
+            // Escuchar eventos en vivo cuando otro dispositivo modifique algo
+            socket.on('state_update', (parsed) => {
+                if (!isServerSynced) return;
+                if (parsed) {
+                    appData.orders = parsed.orders || [];
+                    appData.expenses = parsed.expenses || [];
+                    if (parsed.users && Object.keys(parsed.users).length > 0) {
+                        appData.users = parsed.users;
+                    }
+                    if (parsed.branchStock && Object.keys(parsed.branchStock).length > 0) {
+                        appData.branchStock = parsed.branchStock;
+                    }
                     
                     setupBranchRestrictions();
                     const activeSec = document.querySelector('main > section:not(.hidden)');
@@ -830,6 +967,8 @@
         }
 
         function saveToStorage() {
+            if (!isServerSynced) return; // Bloqueo si aún no termina de cargar
+
             const payload = {
                 orders: appData.orders,
                 expenses: appData.expenses,
@@ -837,18 +976,17 @@
                 branchStock: appData.branchStock
             };
 
-            // Guardado local de respaldo
             localStorage.setItem('taqueria_sabroso_db', JSON.stringify(payload));
 
-            // Avisar al servidor por Socket.io
-            socket.emit('client_update', payload);
-
-            // Respaldo HTTP POST para asegurar persistencia inmediata en el servidor
-            fetch(`${SOCKET_URL}/api/state`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).catch(err => console.error("Error sincronizando:", err));
+            if (socket && socket.connected) {
+                socket.emit('client_update', payload);
+            } else {
+                fetch('/api/state', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).catch(err => console.error("Error sincronizando:", err));
+            }
         }
 
         function checkDailyReset() {
@@ -890,23 +1028,7 @@
             const branch = document.getElementById('loginBranch').value;
             const inputCode = document.getElementById('loginUserCode').value.trim().toLowerCase();
             const pass = document.getElementById('loginPassword').value.trim();
-            
-            // Buscar coincidencia ya sea por la clave exacta o buscando dentro de la propiedad .code de cada usuario
-            let foundKey = null;
-            let userDef = null;
-
-            if (appData.users[inputCode]) {
-                foundKey = inputCode;
-                userDef = appData.users[inputCode];
-            } else {
-                for (const [key, u] of Object.entries(appData.users)) {
-                    if (u.code && u.code.toLowerCase() === inputCode) {
-                        foundKey = key;
-                        userDef = u;
-                        break;
-                    }
-                }
-            }
+            const userDef = appData.users[inputCode];
 
             if (!userDef || userDef.pass !== pass) {
                 document.getElementById('loginErrorMsg').innerText = "USUARIO O CONTRASEÑA INCORRECTOS.";
@@ -920,14 +1042,23 @@
                 return;
             }
 
+            const isGlobalRole = (userDef.role === 'admin' || userDef.role === 'dev');
+            const assignedBranch = userDef.branch || 'Puerto';
+            if (!isGlobalRole && branch !== assignedBranch) {
+                document.getElementById('loginErrorMsg').innerText = `ACCESO DENEGADO: ESTE USUARIO SOLO TIENE ASIGNADA LA SUCURSAL ${assignedBranch.toUpperCase()}.`;
+                document.getElementById('loginError').classList.remove('hidden');
+                return;
+            }
+
             if (userDef.role === 'apoyo' && !isWeekend()) {
                 alert("ACCESO DENEGADO: EL CAJERO DE APOYO SOLO PUEDE INGRESAR SÁBADOS Y DOMINGOS.");
                 return;
             }
 
+            document.getElementById('loginError').classList.add('hidden');
             appData.activeUser = userDef;
             appData.activeBranch = branch;
-            sessionStorage.setItem('taqueria_active_user', foundKey);
+            sessionStorage.setItem('taqueria_active_user', inputCode);
             sessionStorage.setItem('taqueria_active_branch', branch);
             
             initUserSessionView();
@@ -963,6 +1094,10 @@
         function showLogin() { document.getElementById('loginSection').classList.remove('hidden'); document.getElementById('mainHeader').classList.add('hidden'); hideAllSections(); }
 
         function switchBranch(newBranch) {
+            if (!appData.activeUser || (appData.activeUser.role !== 'admin' && appData.activeUser.role !== 'dev')) {
+                alert("ACCESO DENEGADO: SOLO ADMINISTRADOR Y DESARROLLADOR PUEDEN CAMBIAR DE SUCURSAL.");
+                return;
+            }
             appData.activeBranch = newBranch;
             sessionStorage.setItem('taqueria_active_branch', newBranch);
             setupBranchRestrictions();
@@ -1004,6 +1139,14 @@
             }
 
             document.getElementById('headerUserInfo').innerText = `${user.name} (${user.code.toUpperCase()})`;
+            const btnAdminStock = document.getElementById('btnAdminStock');
+            if (btnAdminStock) {
+                if (['dev', 'admin', 'caja'].includes(user.role)) {
+                    btnAdminStock.classList.remove('hidden');
+                } else {
+                    btnAdminStock.classList.add('hidden');
+                }
+            }
             renderRoleTabs(user.role);
             setupBranchRestrictions();
 
@@ -1035,7 +1178,7 @@
 
             tabs.forEach((tab, index) => {
                 const btn = document.createElement('button');
-                btn.className = `px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold ${index === 0 ? 'bg-[var(--cinnabar)] text-white' : 'text-gray-300'}`;
+                btn.className = `px-3.5 py-2 rounded-lg flex items-center gap-1.5 font-bold flex-shrink-0 ${index === 0 ? 'bg-[var(--cinnabar)] text-white' : 'text-gray-300'}`;
                 btn.onclick = () => showSection(tab.id);
                 btn.innerHTML = `<i class="fa-solid ${tab.icon}"></i> <span>${tab.label}</span>`;
                 nav.appendChild(btn);
@@ -1043,6 +1186,7 @@
         }
 
         function showSection(id) {
+            toggleMobileTicketDrawer(false);
             hideAllSections();
             document.getElementById(id).classList.remove('hidden');
             if (id === 'kitchenSection') renderKitchenGrid();
@@ -1098,6 +1242,10 @@
         }
 
         function openAdminStockModal() {
+            if (!appData.activeUser || !['dev', 'admin', 'caja'].includes(appData.activeUser.role)) {
+                alert("ACCESO DENEGADO: SOLO DESARROLLADOR, ADMINISTRADOR O CAJA PRINCIPAL PUEDEN MODIFICAR EL STOCK.");
+                return;
+            }
             const branch = appData.activeBranch;
             document.getElementById('stockModalBranchName').innerText = branch.toUpperCase();
             const container = document.getElementById('stockInputsContainer');
@@ -1110,16 +1258,16 @@
                 container.innerHTML = `
                     <div>
                         <label class="block text-xs font-bold uppercase text-gray-700 mb-1">CANTIDAD DE AGUAS (ADQUISICIÓN / INVENTARIO)</label>
-                        <input type="number" id="inputStockAguas" value="${stock.aguas}" class="w-full bg-gray-50 border border-gray-300 rounded-xl p-3 font-bold text-lg">
+                        <input type="number" inputmode="numeric" id="inputStockAguas" value="${stock.aguas}" class="w-full bg-gray-50 border border-gray-300 rounded-xl p-3 font-bold text-lg">
                     </div>
                 `;
             } else {
                 container.innerHTML = `
                     <div>
                         <label class="block text-xs font-bold uppercase text-gray-700 mb-1">CANTIDAD DE AGUAS</label>
-                        <input type="number" id="inputStockAguas" value="${stock.aguas}" class="w-full bg-gray-50 border border-gray-300 rounded-xl p-3 font-bold text-lg mb-3">
+                        <input type="number" inputmode="numeric" id="inputStockAguas" value="${stock.aguas}" class="w-full bg-gray-50 border border-gray-300 rounded-xl p-3 font-bold text-lg mb-3">
                         <label class="block text-xs font-bold uppercase text-gray-700 mb-1">CANTIDAD DE REFRESCOS</label>
-                        <input type="number" id="inputStockRefrescos" value="${stock.refrescos}" class="w-full bg-gray-50 border border-gray-300 rounded-xl p-3 font-bold text-lg">
+                        <input type="number" inputmode="numeric" id="inputStockRefrescos" value="${stock.refrescos}" class="w-full bg-gray-50 border border-gray-300 rounded-xl p-3 font-bold text-lg">
                     </div>
                 `;
             }
@@ -1131,6 +1279,10 @@
         }
 
         function saveStockModalInput() {
+            if (!appData.activeUser || !['dev', 'admin', 'caja'].includes(appData.activeUser.role)) {
+                alert("ACCESO DENEGADO: SOLO DESARROLLADOR, ADMINISTRADOR O CAJA PRINCIPAL PUEDEN MODIFICAR EL STOCK.");
+                return;
+            }
             const branch = appData.activeBranch;
             if (!appData.branchStock[branch]) {
                 appData.branchStock[branch] = { aguas: 50, refrescos: 50, ventasAguas: 0, ventasRefrescos: 0, lastDate: new Date().toDateString() };
@@ -1161,6 +1313,44 @@
             currentOrderDraft.type = type;
             document.getElementById('btnTypeMesa').className = type === 'Mesa' ? "px-3 py-1.5 rounded-lg bg-[var(--cinnabar)] text-white shadow" : "px-3 py-1.5 rounded-lg text-gray-600";
             document.getElementById('btnTypePedido').className = type === 'Pedido' ? "px-3 py-1.5 rounded-lg bg-[var(--cinnabar)] text-white shadow" : "px-3 py-1.5 rounded-lg text-gray-600";
+            renderContainerSelector();
+            updatePOSSummary();
+        }
+
+        function getContainerWord(type) {
+            return type === 'Pedido' ? 'BOLSA' : 'PLATO';
+        }
+
+        function renderContainerSelector() {
+            const listEl = document.getElementById('containerTabsList');
+            const btnLabel = document.getElementById('btnAddContainerLabel');
+            if (!listEl || !btnLabel) return;
+
+            const word = getContainerWord(currentOrderDraft.type);
+            btnLabel.innerText = `NUEVA ${word === 'BOLSA' ? 'BOLSA' : ''}`.trim() === 'NUEVA' ? 'NUEVO PLATO' : 'NUEVA BOLSA';
+
+            let html = '';
+            for (let i = 1; i <= currentOrderDraft.totalContainers; i++) {
+                const isActive = currentOrderDraft.activeContainer === i;
+                html += `
+                    <button type="button" onclick="selectContainer(${i})" class="px-2.5 py-1 rounded-lg text-xs font-black transition-colors touch-btn ${isActive ? 'bg-[var(--dark-charcoal)] text-white shadow' : 'bg-white text-gray-700 border border-amber-300 hover:bg-amber-100'}">
+                        ${word} ${i}
+                    </button>
+                `;
+            }
+            listEl.innerHTML = html;
+        }
+
+        function selectContainer(num) {
+            currentOrderDraft.activeContainer = num;
+            renderContainerSelector();
+        }
+
+        function addNewContainer() {
+            currentOrderDraft.totalContainers++;
+            currentOrderDraft.activeContainer = currentOrderDraft.totalContainers;
+            renderContainerSelector();
+            updatePOSSummary();
         }
 
         function openModifierModal(productName, price) {
@@ -1183,7 +1373,8 @@
                 producto: selectedModifierProduct,
                 cantidad: tempModQty,
                 precio: selectedModifierPrice,
-                modificadores: [modifierText]
+                modificadores: [modifierText],
+                plato: currentOrderDraft.activeContainer
             });
             closeModifierModal();
             updatePOSSummary();
@@ -1205,24 +1396,46 @@
                     producto: 'Tacos de Cabeza',
                     cantidad: totalCabeza,
                     precio: 18.00,
-                    modificadores: [partsDesc]
+                    modificadores: [partsDesc],
+                    plato: currentOrderDraft.activeContainer
                 });
             }
             closeCabezaModal();
             updatePOSSummary();
         }
 
+        let pendingConsomeMonto = 0;
+
         function addConsomeLibre() {
             let monto = parseFloat(document.getElementById('montoConsome').value);
             if (isNaN(monto) || monto <= 0) { alert("INGRESE MONTO VÁLIDO"); return; }
+            pendingConsomeMonto = monto;
+            document.getElementById('consomeModalTitle').querySelector('span').innerText = `PERSONALIZAR: CONSOMÉ ($${monto})`;
+            const defaultRadio = document.querySelector('input[name="consomeRadio"][value="maciza"]');
+            if (defaultRadio) defaultRadio.checked = true;
+            document.getElementById('consomeModal').classList.remove('hidden');
+        }
+
+        function closeConsomeModal() {
+            document.getElementById('consomeModal').classList.add('hidden');
+            pendingConsomeMonto = 0;
+        }
+
+        function confirmAddConsome() {
+            if (pendingConsomeMonto <= 0) return;
+            const selectedRadio = document.querySelector('input[name="consomeRadio"]:checked');
+            const tipoConsome = selectedRadio ? selectedRadio.value : 'maciza';
+            let monto = pendingConsomeMonto;
             let litros = (monto / 200).toFixed(2);
             currentOrderDraft.items.push({
                 producto: `Consomé (${litros} L)`,
                 cantidad: 1,
                 precio: monto,
-                modificadores: [`Monto libre: $${monto}`]
+                modificadores: [tipoConsome, `Monto libre: $${monto}`],
+                plato: currentOrderDraft.activeContainer
             });
             document.getElementById('montoConsome').value = '';
+            closeConsomeModal();
             updatePOSSummary();
         }
 
@@ -1234,7 +1447,8 @@
                 producto: `Carne a Granel (${kilos} KG)`,
                 cantidad: 1,
                 precio: monto,
-                modificadores: [`Monto libre: $${monto}`]
+                modificadores: [`Monto libre: $${monto}`],
+                plato: currentOrderDraft.activeContainer
             });
             document.getElementById('montoCarne').value = '';
             updatePOSSummary();
@@ -1278,7 +1492,7 @@
 
             saveToStorage();
             setupBranchRestrictions();
-            currentOrderDraft.items.push({ producto: drinkName, cantidad: 1, precio: price, modificadores: ['fresco'] });
+            currentOrderDraft.items.push({ producto: drinkName, cantidad: 1, precio: price, modificadores: ['fresco'], plato: currentOrderDraft.activeContainer });
             updatePOSSummary();
         }
 
@@ -1286,36 +1500,67 @@
             const summaryEl = document.getElementById('orderItemsSummary');
             const totalItemsEl = document.getElementById('summaryTotalItems');
             const totalPriceEl = document.getElementById('summaryTotalPrice');
+            const mobileItemsEl = document.getElementById('mobileBarItemsCount');
+            const mobilePriceEl = document.getElementById('mobileBarTotalPrice');
 
             if (currentOrderDraft.items.length === 0) {
                 summaryEl.innerHTML = `<p class="text-gray-400 italic text-center py-6">SIN PRODUCTOS</p>`;
                 totalItemsEl.innerText = '0';
                 totalPriceEl.innerText = '$0.00';
+                if (mobileItemsEl) mobileItemsEl.innerText = '0';
+                if (mobilePriceEl) mobilePriceEl.innerText = '$0.00';
                 return;
             }
 
             let totalPieces = 0, totalCost = 0;
-            summaryEl.innerHTML = currentOrderDraft.items.map((item, idx) => {
+            const word = getContainerWord(currentOrderDraft.type);
+            const grouped = {};
+
+            currentOrderDraft.items.forEach((item, idx) => {
                 totalPieces += item.cantidad;
                 totalCost += (item.cantidad * item.precio);
-                return `
-                <div class="flex justify-between items-start border-b pb-1">
-                    <div>
-                        <strong>${item.cantidad}x ${item.producto}</strong>
-                        <div class="text-[10px] text-gray-500">└ ${item.modificadores.join(', ')}</div>
+                const pNum = item.plato || 1;
+                if (!grouped[pNum]) grouped[pNum] = [];
+                grouped[pNum].push({ item, idx });
+            });
+
+            const containerKeys = Object.keys(grouped).sort((a, b) => Number(a) - Number(b));
+            const showHeaders = containerKeys.length > 1 || Number(containerKeys[0]) > 1;
+
+            summaryEl.innerHTML = containerKeys.map(pNum => {
+                const itemsHtml = grouped[pNum].map(({ item, idx }) => `
+                    <div class="flex justify-between items-start border-b border-gray-200/70 pb-1 last:border-b-0">
+                        <div>
+                            <strong>${item.cantidad}x ${item.producto}</strong>
+                            <div class="text-xs font-bold text-gray-500">└ ${item.modificadores.join(', ')}</div>
+                        </div>
+                        <button onclick="removeItem(${idx})" class="text-red-600 font-bold px-2 py-0.5">✕</button>
                     </div>
-                    <button onclick="removeItem(${idx})" class="text-red-600 font-bold">✕</button>
-                </div>`;
+                `).join('');
+
+                if (!showHeaders) return itemsHtml;
+
+                return `
+                    <div class="bg-white rounded-lg p-2 border border-amber-200 shadow-sm space-y-1.5">
+                        <div class="text-xs font-bold font-black text-[var(--engineering-orange)] uppercase tracking-wider border-b border-amber-100 pb-0.5">
+                            🍽️ ${word} ${pNum}
+                        </div>
+                        ${itemsHtml}
+                    </div>
+                `;
             }).join('');
 
             totalItemsEl.innerText = totalPieces;
             totalPriceEl.innerText = `$${totalCost.toFixed(2)}`;
+            if (mobileItemsEl) mobileItemsEl.innerText = totalPieces;
+            if (mobilePriceEl) mobilePriceEl.innerText = `$${totalCost.toFixed(2)}`;
         }
 
         function removeItem(index) { currentOrderDraft.items.splice(index, 1); updatePOSSummary(); }
         function clearCurrentOrderForm() {
-            currentOrderDraft = { id: null, type: 'Mesa', items: [], cabeza: { cachete: 0, lengua: 0, sesos: 0, ojo: 0, trompa: 0 }, isModified: false };
+            currentOrderDraft = { id: null, type: 'Mesa', activeContainer: 1, totalContainers: 1, items: [], cabeza: { cachete: 0, lengua: 0, sesos: 0, ojo: 0, trompa: 0 }, isModified: false };
             document.getElementById('orderNotesInput').value = '';
+            renderContainerSelector();
             updatePOSSummary();
         }
 
@@ -1372,14 +1617,59 @@
             appData.orders.unshift(newOrder);
             saveToStorage();
             clearCurrentOrderForm();
+            toggleMobileTicketDrawer(false);
             alert(`COMANDA ENVIADA CON ÉXITO: ${uniqueCode}`);
             renderKitchenGrid();
+        }
+
+        function renderKitchenItemsHtml(order) {
+            const word = order.type === 'Pedido' ? 'BOLSA' : 'PLATO';
+            const grouped = {};
+            order.items.forEach(i => {
+                const pNum = i.plato || 1;
+                if (!grouped[pNum]) grouped[pNum] = [];
+                grouped[pNum].push(i);
+            });
+
+            const containerKeys = Object.keys(grouped).sort((a, b) => Number(a) - Number(b));
+            if (containerKeys.length <= 1) {
+                return `
+                    <ul class="space-y-2 my-2 text-xs">
+                        ${order.items.map(i => `<li><strong>${i.cantidad}x ${i.producto}</strong><div class="text-gray-500 pl-2">└ ${i.modificadores.join(', ')}</div></li>`).join('')}
+                    </ul>
+                `;
+            }
+
+            return `
+                <div class="space-y-2 my-2">
+                    ${containerKeys.map((pNum, idx) => `
+                        <div class="bg-amber-50/70 border border-amber-300 rounded-xl p-2">
+                            <div class="text-xs font-black text-[var(--engineering-orange)] uppercase tracking-wider border-b border-amber-200 pb-0.5 mb-1">
+                                ${order.type === 'Pedido' ? '📦' : '🍽️'} ${word} ${idx + 1}
+                            </div>
+                            <ul class="space-y-1.5 text-xs">
+                                ${grouped[pNum].map(i => `<li><strong>${i.cantidad}x ${i.producto}</strong><div class="text-gray-600 pl-2">└ ${i.modificadores.join(', ')}</div></li>`).join('')}
+                            </ul>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
         }
 
         function renderKitchenGrid() {
             const grid = document.getElementById('kitchenOrdersGrid');
             if (!grid) return;
-            const branchOrders = appData.orders.filter(o => o.branch === appData.activeBranch && o.status === 'Pendiente');
+            const user = appData.activeUser;
+            const role = user ? user.role : '';
+            const userCode = user ? user.code.toLowerCase() : '';
+            const canDeliver = ['taquero', 'admin', 'dev'].includes(role);
+            const isTrackingOnly = ['caja', 'apoyo', 'mesero'].includes(role);
+
+            let branchOrders = appData.orders.filter(o => o.branch === appData.activeBranch && (isTrackingOnly ? o.status !== 'Cobrado' : o.status === 'Pendiente'));
+
+            if (isTrackingOnly) {
+                branchOrders = branchOrders.filter(o => (o.createdBy || '').toLowerCase() === userCode);
+            }
 
             if (branchOrders.length === 0) {
                 grid.innerHTML = `<div class="col-span-full py-16 text-center text-gray-400"><p class="font-bold text-lg">NO HAY COMANDAS PENDIENTES</p></div>`;
@@ -1387,6 +1677,14 @@
             }
 
             grid.innerHTML = branchOrders.map(o => {
+                const actionFooter = canDeliver
+                    ? `<button onclick="markOrderDelivered('${o.id}')" class="w-full bg-emerald-600 text-white font-black py-2.5 rounded-xl shadow uppercase text-xs mt-3">
+                        ENTREGADO
+                    </button>`
+                    : `<div class="w-full text-center font-black py-2 rounded-xl uppercase text-xs mt-3 ${o.status === 'Entregado' ? 'bg-blue-100 text-blue-800 border border-blue-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}">
+                        ESTATUS: ${o.status.toUpperCase()}
+                    </div>`;
+
                 return `
                 <div class="bg-white rounded-2xl shadow-lg border-2 border-gray-200 p-4 flex flex-col justify-between ${o.isModified ? 'blink-modified' : ''}">
                     <div>
@@ -1394,19 +1692,19 @@
                             <span class="font-mono font-black text-lg text-[var(--engineering-orange)]">${o.id}</span>
                             <span class="px-2 py-0.5 rounded text-xs font-black uppercase ${o.type === 'Mesa' ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800'}">${o.type}</span>
                         </div>
-                        <ul class="space-y-2 my-2 text-xs">
-                            ${o.items.map(i => `<li><strong>${i.cantidad}x ${i.producto}</strong><div class="text-gray-500 pl-2">└ ${i.modificadores.join(', ')}</div></li>`).join('')}
-                        </ul>
+                        ${renderKitchenItemsHtml(o)}
                         ${o.notes ? `<p class="text-xs text-red-600 font-bold mt-2">NOTA: ${o.notes}</p>` : ''}
                     </div>
-                    <button onclick="markOrderDelivered('${o.id}')" class="w-full bg-emerald-600 text-white font-black py-2.5 rounded-xl shadow uppercase text-xs mt-3">
-                        ENTREGADO
-                    </button>
+                    ${actionFooter}
                 </div>`;
             }).join('');
         }
 
         function markOrderDelivered(orderId) {
+            if (!appData.activeUser || !['taquero', 'admin', 'dev'].includes(appData.activeUser.role)) {
+                alert("ACCESO DENEGADO: SOLO TAQUERO COCINA, ADMINISTRADOR O DESARROLLADOR PUEDEN MARCAR COMO ENTREGADO.");
+                return;
+            }
             const idx = appData.orders.findIndex(o => o.id === orderId);
             if (idx !== -1) { 
                 appData.orders[idx].status = 'Entregado'; 
@@ -1424,11 +1722,11 @@
             unpaidList.innerHTML = pending.map(o => `
                 <div onclick="selectOrderToPay('${o.id}')" class="p-3 rounded-xl border cursor-pointer hover:bg-gray-50 ${o.status === 'Entregado' ? 'border-blue-300 bg-blue-50/30' : 'border-gray-200'}">
                     <div class="flex justify-between font-bold">
-                        <span>${o.id} ${o.status === 'Entregado' ? '<span class="text-[10px] text-blue-600 font-normal">(Entregado)</span>' : '<span class="text-[10px] text-amber-600 font-normal">(En Cocina)</span>'}</span>
+                        <span>${o.id} ${o.status === 'Entregado' ? '<span class="text-xs font-bold text-blue-600 font-normal">(Entregado)</span>' : '<span class="text-xs font-bold text-amber-600 font-normal">(En Cocina)</span>'}</span>
                         <span>${o.type}</span>
                     </div>
                     <div class="text-xs text-gray-500">${o.timestamp} - ${o.items.length} ÍTEMS</div>
-                    <div class="text-[10px] text-gray-600 mt-1">└ ${o.items.map(i => `${i.cantidad}x ${i.producto}`).join(', ')}</div>
+                    <div class="text-xs font-bold text-gray-600 mt-1">└ ${o.items.map(i => `${i.cantidad}x ${i.producto}`).join(', ')}</div>
                 </div>`).join('');
         }
 
@@ -1444,6 +1742,13 @@
                 document.getElementById('payAmountInput').value = total.toFixed(2);
                 document.getElementById('btnConfirmPayment').disabled = false;
                 document.getElementById('paymentActiveNotice').innerText = `COBRANDO CUENTA: ${order.id}`;
+
+                if (window.innerWidth < 768) {
+                    const paymentCard = document.getElementById('cashierPaymentCard');
+                    if (paymentCard) {
+                        paymentCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
             }
         }
 
@@ -1491,6 +1796,9 @@
                 selectedPayOrderId = null;
                 alert("COBRO REGISTRADO CON ÉXITO.");
                 renderCashierView();
+                if (window.innerWidth < 768) {
+                    scrollBackToAccounts();
+                }
             }
         }
 
@@ -1512,19 +1820,22 @@
             alert("GASTO REGISTRADO.");
         }
 
-        function triggerRandomAuditSim() { document.getElementById('randomAuditModal').classList.remove('hidden'); }
-        function dismissAuditModal() { document.getElementById('randomAuditModal').classList.add('hidden'); }
-
         function triggerEndOfDay() {
+            const physicalInput = document.getElementById('terminalPhysicalTotal');
+            if (!physicalInput || physicalInput.value.trim() === '' || isNaN(parseFloat(physicalInput.value))) {
+                alert("POR FAVOR, INGRESE LA CANTIDAD EN 'COMPARATIVA DINERO FÍSICO' ANTES DE CERRAR LA JORNADA.");
+                if (physicalInput) physicalInput.focus();
+                return;
+            }
+            calculateTerminalDiff();
+
             const unpaid = appData.orders.filter(o => o.branch === appData.activeBranch && o.status !== 'Cobrado');
-            if (unpaid.length > 0) {
-                requestAdminAuth(`Existen ${unpaid.length} cuentas sin cobrar. Se requiere autorización de Admin.`, () => {
-                    executeEndOfDayRoutine();
-                });
-            } else {
-                if (confirm("¿CONFIRMAR CIERRE DE JORNADA?")) { 
-                    executeEndOfDayRoutine(); 
-                }
+            const mensaje = unpaid.length > 0 
+                ? `AVISO: Hay ${unpaid.length} cuenta(s) abierta(s) sin cobrar. ¿CONFIRMAR CIERRE DE JORNADA Y BORRARLAS?`
+                : "¿CONFIRMAR CIERRE DE JORNADA?";
+
+            if (confirm(mensaje)) { 
+                executeEndOfDayRoutine(); 
             }
         }
 
@@ -1533,18 +1844,21 @@
             const element = document.getElementById('pdfReportContainer');
             
             if (element && typeof html2pdf !== 'undefined') {
+                const reportSec = document.getElementById('reportSection');
+                const prevScroll = reportSec ? reportSec.scrollTop : 0;
+                if (reportSec) reportSec.scrollTop = 0;
+
                 const opt = {
-                    margin:       10,
+                    margin:       [10, 10, 10, 10],
                     filename:     `cierre_jornada_${currentBranch.toLowerCase()}_${new Date().toISOString().slice(0,10)}.pdf`,
                     image:        { type: 'jpeg', quality: 0.98 },
-                    html2canvas:  { scale: 2, useCORS: true },
-                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    html2canvas:  { scale: 2, useCORS: true, windowWidth: 1000, scrollY: 0, scrollX: 0, x: 0, y: 0 },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' },
+                    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
                 };
                 
                 html2pdf().from(element).set(opt).save().then(() => {
-                    finalizeDayDataCleanup(currentBranch);
-                }).catch(err => {
-                    console.error("Error generando PDF:", err);
+                    if (reportSec) reportSec.scrollTop = prevScroll;
                     finalizeDayDataCleanup(currentBranch);
                 });
             } else {
@@ -1583,11 +1897,17 @@
         function closeAdminAuthModal(succ) { document.getElementById('adminAuthModal').classList.add('hidden'); if(!succ) adminAuthSuccessCallback = null; }
         function submitAdminAuthModal() {
             const pass = document.getElementById('adminAuthPassword').value.trim();
-            if (pass === appData.users.admin.pass || pass === appData.users.dev.pass) {
+            const isAuthorized = Object.values(appData.users || {}).some(
+                u => (u.role === 'admin' || u.role === 'dev') && u.status !== 'inactivo' && u.pass === pass
+            );
+
+            if (isAuthorized) {
                 const cb = adminAuthSuccessCallback;
                 closeAdminAuthModal(true);
                 if (cb) cb();
-            } else { alert("CONTRASEÑA INCORRECTA"); }
+            } else {
+                alert("CONTRASEÑA INCORRECTA");
+            }
         }
 
         /* ==========================================================================
@@ -1615,8 +1935,8 @@
 
             tbody.innerHTML = usersArray.map(u => {
                 const statusBadge = u.status === 'inactivo' 
-                    ? `<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-bold text-[10px]">INACTIVO</span>` 
-                    : `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold text-[10px]">ACTIVO</span>`;
+                    ? `<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-bold text-xs font-bold">INACTIVO</span>` 
+                    : `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold text-xs font-bold">ACTIVO</span>`;
                 
                 return `
                     <tr class="hover:bg-gray-50 transition-colors">
@@ -1626,10 +1946,10 @@
                         <td class="p-3 font-semibold text-gray-600">${u.branch || 'Puerto'}</td>
                         <td class="p-3">${statusBadge}</td>
                         <td class="p-3 text-right space-x-2">
-                            <button onclick="editUser('${u.key}')" class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1 rounded-lg font-bold text-[11px]">
+                            <button onclick="editUser('${u.key}')" class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1 rounded-lg font-bold text-xs">
                                 <i class="fa-solid fa-pen"></i> EDITAR
                             </button>
-                            <button onclick="deleteUser('${u.key}')" class="bg-red-100 hover:bg-red-200 text-red-800 px-2.5 py-1 rounded-lg font-bold text-[11px]">
+                            <button onclick="deleteUser('${u.key}')" class="bg-red-100 hover:bg-red-200 text-red-800 px-2.5 py-1 rounded-lg font-bold text-xs">
                                 <i class="fa-solid fa-trash"></i> ELIMINAR
                             </button>
                         </td>
@@ -1837,8 +2157,8 @@
         }
 
         function calculateTerminalDiff() {
-            const systemCardText = document.getElementById('repPayTarjeta').innerText.replace('$', '');
-            const systemCard = parseFloat(systemCardText) || 0;
+            const systemCashText = document.getElementById('repPayEfectivo').innerText.replace('$', '');
+            const systemCash = parseFloat(systemCashText) || 0;
             const physicalInput = document.getElementById('terminalPhysicalTotal');
             const diffNotice = document.getElementById('terminalDiffNotice');
 
@@ -1850,18 +2170,18 @@
                 return;
             }
 
-            const diff = physicalVal - systemCard;
+            const diff = physicalVal - systemCash;
             diffNotice.classList.remove('hidden');
 
             if (Math.abs(diff) < 0.01) {
                 diffNotice.className = "mt-2 text-xs font-bold p-2 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
-                diffNotice.innerText = "✅ Conciliación Perfecta: Lote físico coincide exactamente con Tarjeta Sistema.";
+                diffNotice.innerText = `✅ CUADRADO: $${diff.toFixed(2)}`;
             } else if (diff > 0) {
                 diffNotice.className = "mt-2 text-xs font-bold p-2 rounded bg-amber-100 text-amber-900 border border-amber-300";
-                diffNotice.innerText = `⚠️ Sobrante en Terminal Física: +$${diff.toFixed(2)} respecto al sistema.`;
+                diffNotice.innerText = `⚠️ SOBRANTE: +$${diff.toFixed(2)}`;
             } else {
                 diffNotice.className = "mt-2 text-xs font-bold p-2 rounded bg-red-100 text-red-800 border border-red-300";
-                diffNotice.innerText = `🚨 Faltante en Terminal Física: -$${Math.abs(diff).toFixed(2)} respecto al sistema.`;
+                diffNotice.innerText = `🚨 DESCUADRE: -$${Math.abs(diff).toFixed(2)}`;
             }
         }
     </script>
